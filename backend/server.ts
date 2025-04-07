@@ -6,13 +6,42 @@ import shortid from 'shortid';
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Enable CORS for any origin in development/production
+// List of allowed origins
+const allowedOrigins = [
+  // Vercel deployments
+  'https://url-shortener-43wfqs0md-strongandmals-projects.vercel.app',
+  'https://url-shortener-8o848ps0x-strongandmals-projects.vercel.app',
+  'https://url-shortener-fbajvwg49-strongandmals-projects.vercel.app',
+  'https://url-shortener-btvut9smz-strongandmals-projects.vercel.app',
+  // Local development
+  'http://localhost:5173',
+  // GitHub Pages
+  'https://strongandmal.github.io'
+];
+
+// Enable CORS for specific origins
 app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true,
-  maxAge: 86400
+  origin: function(origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Check if origin is in allowed list
+    if (allowedOrigins.indexOf(origin) === -1) {
+      console.log(`Origin ${origin} is not allowed by CORS`);
+      // If not in list but has url-shortener in the domain, allow it (for new Vercel deployments)
+      if (origin.includes('url-shortener') && origin.includes('vercel.app')) {
+        console.log(`Allowing new Vercel deployment: ${origin}`);
+        return callback(null, true);
+      }
+    }
+    
+    return callback(null, true);
+  },
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+  credentials: false,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin'],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 
 // Handle preflight requests
@@ -28,7 +57,11 @@ const BASE_URL = 'http://localhost:3000';
 
 // Health check endpoint
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok' });
+  // Set CORS headers explicitly for health check
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 const formatUrl = (url: string): string => {
@@ -51,8 +84,10 @@ const generateShortId = (): string => {
 // Middleware to log all requests
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
-  console.log('Headers:', req.headers);
-  if (req.body) console.log('Body:', req.body);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  if (req.body && Object.keys(req.body).length > 0) {
+    console.log('Body:', JSON.stringify(req.body, null, 2));
+  }
   next();
 });
 
@@ -73,6 +108,11 @@ app.post('/api/shorten', (req, res) => {
     urlMap.set(shortId, formattedUrl);
     
     console.log(`Shortened URL: ${formattedUrl} -> ${shortUrl}`);
+    
+    // Set CORS headers explicitly (helps with some clients)
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+    
     res.json({ shortUrl });
   } catch (error) {
     console.error('Error shortening URL:', error);
@@ -102,7 +142,11 @@ app.get('/:shortId', (req, res) => {
 
 // API base endpoint for testing
 app.get('/api', (req, res) => {
-  res.json({ message: 'URL Shortener API is running' });
+  // Set CORS headers explicitly for API endpoint
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  
+  res.json({ message: 'URL Shortener API is running', timestamp: new Date().toISOString() });
 });
 
 // Error handling middleware
