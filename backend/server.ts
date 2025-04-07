@@ -6,22 +6,17 @@ import shortid from 'shortid';
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Enable CORS for specific origins
-const allowedOrigins = [
-  'https://strongandmal.github.io',
-  'http://localhost:5173'
-];
-
+// Enable CORS for any origin in development/production
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: true,
+  maxAge: 86400
 }));
+
+// Handle preflight requests
+app.options('*', cors());
 
 app.use(bodyParser.json());
 
@@ -53,12 +48,21 @@ const generateShortId = (): string => {
   return shortid.generate().slice(0, 6);
 };
 
+// Middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
+  console.log('Headers:', req.headers);
+  if (req.body) console.log('Body:', req.body);
+  next();
+});
+
 // Shorten URL endpoint
 app.post('/api/shorten', (req, res) => {
   try {
     const { url } = req.body;
     
     if (!url) {
+      console.error('No URL provided in request body:', req.body);
       return res.status(400).json({ error: 'URL is required' });
     }
 
@@ -82,6 +86,8 @@ app.get('/:shortId', (req, res) => {
     const { shortId } = req.params;
     const longUrl = urlMap.get(shortId);
     
+    console.log(`Lookup for shortId: ${shortId}, found: ${longUrl || 'not found'}`);
+    
     if (!longUrl) {
       return res.status(404).json({ error: 'URL not found' });
     }
@@ -92,6 +98,11 @@ app.get('/:shortId', (req, res) => {
     console.error('Error redirecting:', error);
     res.status(500).json({ error: 'Failed to redirect' });
   }
+});
+
+// API base endpoint for testing
+app.get('/api', (req, res) => {
+  res.json({ message: 'URL Shortener API is running' });
 });
 
 // Error handling middleware

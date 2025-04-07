@@ -1,37 +1,75 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   Box,
-  Button,
-  Input,
   VStack,
+  Input,
+  Button,
+  FormControl,
+  FormLabel,
+  FormErrorMessage,
+  InputGroup,
+  InputRightElement,
   Text,
   useToast,
-  InputGroup,
   useClipboard,
-  IconButton,
-  Container,
-  Heading,
   Flex,
+  Heading,
+  useColorModeValue,
+  Divider,
+  Alert,
+  AlertIcon,
+  AlertTitle,
+  AlertDescription,
 } from '@chakra-ui/react';
-import { CopyIcon, CheckIcon } from '@chakra-ui/icons';
+import { CopyIcon, CheckIcon, LinkIcon } from '@chakra-ui/icons';
 import { shortenUrl } from '../services/api';
 
 const UrlShortener = () => {
   const [url, setUrl] = useState('');
-  const [shortenedUrl, setShortenedUrl] = useState('');
+  const [shortUrl, setShortUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   const toast = useToast();
-  const { hasCopied, onCopy } = useClipboard(shortenedUrl);
+  const { hasCopied, onCopy } = useClipboard(shortUrl);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
+  const bgColor = useColorModeValue('white', 'gray.700');
+  const borderColor = useColorModeValue('gray.200', 'gray.600');
+  const inputBg = useColorModeValue('gray.50', 'gray.800');
+  
+  const isValidUrl = (urlString: string) => {
+    try {
+      const formatted = urlString.trim();
+      if (!formatted) return false;
+      
+      // Add protocol if missing
+      const urlWithProtocol = formatted.match(/^https?:\/\//i) 
+        ? formatted 
+        : `http://${formatted}`;
+        
+      new URL(urlWithProtocol);
+      return true;
+    } catch (err) {
+      return false;
+    }
+  };
+
+  const handleShortenUrl = async () => {
+    if (!url) {
+      setError('Please enter a URL');
+      return;
+    }
+
+    if (!isValidUrl(url)) {
+      setError('Please enter a valid URL');
+      return;
+    }
+
     setError('');
-    
+    setIsLoading(true);
+
     try {
       const result = await shortenUrl(url);
-      setShortenedUrl(result);
+      setShortUrl(result);
       toast({
         title: 'URL shortened successfully!',
         status: 'success',
@@ -39,12 +77,13 @@ const UrlShortener = () => {
         isClosable: true,
       });
     } catch (err) {
+      console.error('Error shortening URL:', err);
       setError(err instanceof Error ? err.message : 'Failed to shorten URL');
       toast({
         title: 'Error',
-        description: error,
+        description: err instanceof Error ? err.message : 'Failed to shorten URL',
         status: 'error',
-        duration: 3000,
+        duration: 5000,
         isClosable: true,
       });
     } finally {
@@ -56,59 +95,88 @@ const UrlShortener = () => {
     onCopy();
     toast({
       title: 'URL copied to clipboard!',
-      status: 'success',
+      status: 'info',
       duration: 2000,
       isClosable: true,
     });
   };
 
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleShortenUrl();
+    }
+  };
+
   return (
-    <Container maxW="container.md" py={10}>
-      <VStack spacing={8}>
-        <Heading as="h1" size="2xl" bgGradient="linear(to-r, blue.400, purple.500)" bgClip="text">
-          URL Shortener
-        </Heading>
-        
-        <Box w="100%" p={4} borderWidth="1px" borderRadius="lg">
-          <form onSubmit={handleSubmit}>
-            <VStack spacing={4}>
-              <InputGroup size="lg">
-                <Input
-                  placeholder="Enter your long URL here"
-                  value={url}
-                  onChange={(e) => setUrl(e.target.value)}
-                  isInvalid={!!error}
-                />
-                <Button
-                  type="submit"
-                  colorScheme="blue"
-                  isLoading={isLoading}
-                  loadingText="Shortening..."
-                >
-                  Shorten URL
-                </Button>
-              </InputGroup>
-              
-              {error && (
-                <Text color="red.500">{error}</Text>
-              )}
-              
-              {shortenedUrl && (
-                <Flex align="center" justify="center">
-                  <Text mr={2}>{shortenedUrl}</Text>
-                  <IconButton
-                    aria-label="Copy URL"
-                    icon={hasCopied ? <CheckIcon /> : <CopyIcon />}
-                    onClick={handleCopy}
-                    colorScheme={hasCopied ? 'green' : 'blue'}
-                  />
-                </Flex>
-              )}
-            </VStack>
-          </form>
-        </Box>
-      </VStack>
-    </Container>
+    <VStack spacing={6} align="stretch" w="100%">
+      <Heading size="md" mb={1}>Shorten your URL</Heading>
+      
+      <FormControl isInvalid={!!error}>
+        <FormLabel htmlFor="url">Enter a long URL</FormLabel>
+        <InputGroup size="lg">
+          <Input
+            id="url"
+            placeholder="https://example.com/very/long/url"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            onKeyPress={handleKeyPress}
+            bg={inputBg}
+            borderWidth="1px"
+            borderColor={borderColor}
+            focusBorderColor="teal.400"
+            _focus={{ borderColor: 'teal.400', boxShadow: '0 0 0 1px teal.400' }}
+          />
+          <InputRightElement width="4.5rem">
+            <LinkIcon color="gray.500" />
+          </InputRightElement>
+        </InputGroup>
+        {error && <FormErrorMessage>{error}</FormErrorMessage>}
+      </FormControl>
+      
+      <Button
+        colorScheme="teal"
+        size="lg"
+        isLoading={isLoading}
+        loadingText="Shortening..."
+        onClick={handleShortenUrl}
+        isDisabled={!url.trim()}
+        w="100%"
+        mb={4}
+      >
+        Shorten URL
+      </Button>
+      
+      {shortUrl && (
+        <>
+          <Divider my={2} />
+          
+          <Box>
+            <Text fontWeight="bold" mb={2}>Your shortened URL:</Text>
+            <Flex 
+              p={3} 
+              borderRadius="md" 
+              bg={inputBg} 
+              borderWidth="1px"
+              borderColor={borderColor}
+              alignItems="center"
+            >
+              <Text flex="1" fontWeight="medium" isTruncated>
+                {shortUrl}
+              </Text>
+              <Button
+                ml={2}
+                colorScheme={hasCopied ? 'green' : 'gray'}
+                onClick={handleCopy}
+                size="sm"
+                leftIcon={hasCopied ? <CheckIcon /> : <CopyIcon />}
+              >
+                {hasCopied ? 'Copied' : 'Copy'}
+              </Button>
+            </Flex>
+          </Box>
+        </>
+      )}
+    </VStack>
   );
 };
 
