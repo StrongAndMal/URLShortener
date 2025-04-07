@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_URL = 'http://localhost:3000/api'; // Update this with your actual API URL
+// Use environment variable or fallback to localhost
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 const formatUrl = (url: string): string => {
   // Remove any whitespace
@@ -49,10 +50,9 @@ export const shortenUrl = async (longUrl: string): Promise<string> => {
       if (error.response) {
         console.error('Server response:', error.response.data);
         throw new Error(error.response.data.error || 'Failed to shorten URL');
-      } else if (error.request) {
-        throw new Error('No response from server. Please check if the backend is running.');
       }
+      throw new Error('Network error. Please check your connection.');
     }
-    throw new Error('An unexpected error occurred');
+    throw error;
   }
 }; 

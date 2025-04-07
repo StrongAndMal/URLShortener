@@ -5,20 +5,17 @@ import {
   Input,
   VStack,
   Text,
-  Container,
-  Heading,
   useToast,
-  Flex,
-  IconButton,
-  useClipboard,
   InputGroup,
-  InputRightElement,
-  Spinner,
+  InputRightAddon,
+  useClipboard,
+  HStack,
+  IconButton,
+  Tooltip,
 } from '@chakra-ui/react';
-import { CopyIcon, CheckIcon } from '@chakra-ui/icons';
-import { useNavigate } from 'react-router-dom';
+import { CopyIcon, ExternalLinkIcon } from '@chakra-ui/icons';
 import { shortenUrl } from '../services/api';
-import { simplecopy } from '../utils/simplecopy';
+import { useNavigate } from 'react-router-dom';
 
 const UrlShortener = () => {
   const [url, setUrl] = useState('');
