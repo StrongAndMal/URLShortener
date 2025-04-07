@@ -69,7 +69,6 @@ MIT License - Do whatever you want with it! (Just give credit where it's due ğŸ˜
 
 Hey! I'm StrongAndMal. You can find me on:
 
-- [GitHub](https://github.com/StrongAndMal)
 - [Instagram](https://www.instagram.com/strongandmal/)
 
 ## ğŸ™ Thanks
