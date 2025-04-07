@@ -1,7 +1,7 @@
 import axios from 'axios';
 
-// Use environment variable or fallback to localhost
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+// Use environment variable or fallback to the Railway URL
+const API_URL = import.meta.env.VITE_API_URL || 'https://urlshortener-production-40c8.up.railway.app/api';
 
 const formatUrl = (url: string): string => {
   // Remove any whitespace
@@ -24,6 +24,7 @@ export const shortenUrl = async (longUrl: string): Promise<string> => {
 
   const formattedUrl = formatUrl(longUrl);
   console.log('Formatted URL:', formattedUrl);
+  console.log('Using API URL:', API_URL);
 
   try {
     console.log('Sending request to:', `${API_URL}/shorten`);
