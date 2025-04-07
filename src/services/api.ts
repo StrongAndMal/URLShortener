@@ -1,7 +1,17 @@
 import axios from 'axios';
 
-// Use environment variable or fallback to the Railway URL
-const API_URL = import.meta.env.VITE_API_URL || 'https://urlshortener-production-40c8.up.railway.app/api';
+// Default API URL if env var is missing
+const DEFAULT_API_URL = 'https://urlshortener-production-40c8.up.railway.app/api';
+
+// Use environment variable with fallback
+const API_URL = import.meta.env.VITE_API_URL || DEFAULT_API_URL;
+
+// Log environment variable status
+if (!import.meta.env.VITE_API_URL) {
+  console.warn('VITE_API_URL environment variable is not set! Using default:', DEFAULT_API_URL);
+} else {
+  console.log('Using API URL from environment:', import.meta.env.VITE_API_URL);
+}
 
 console.log('API URL initialized as:', API_URL);
 console.log('Environment variables:', import.meta.env);
@@ -44,7 +54,7 @@ export const shortenUrl = async (longUrl: string): Promise<string> => {
 
   const formattedUrl = formatUrl(longUrl);
   console.log('Formatted URL:', formattedUrl);
-  console.log('Using API URL:', API_URL);
+  console.log('Using API URL for request:', API_URL);
 
   const makeRequest = () => {
     const requestUrl = `${API_URL}/shorten`;
@@ -53,7 +63,8 @@ export const shortenUrl = async (longUrl: string): Promise<string> => {
     return axios.post(requestUrl, { url: formattedUrl }, {
       headers: {
         'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        'Accept': 'application/json',
+        'Origin': window.location.origin
       },
       withCredentials: false // This can help with CORS issues
     });
@@ -83,14 +94,20 @@ export const shortenUrl = async (longUrl: string): Promise<string> => {
         
         // Try to ping the server to see if it's reachable
         try {
-          const checkServer = await fetch(`${API_URL.split('/api')[0]}/health`);
+          const checkServer = await fetch(`${API_URL.split('/api')[0]}/health`, {
+            mode: 'cors',
+            headers: {
+              'Origin': window.location.origin
+            }
+          });
           if (checkServer.ok) {
             throw new Error('Server is reachable but the API endpoint is not responding. Please try again later.');
           } else {
             throw new Error('Server is unreachable. Please check your connection or try again later.');
           }
         } catch (e) {
-          throw new Error('No response received from server. This could be due to network issues or the server may be down.');
+          console.error('Health check failed:', e);
+          throw new Error(`No response received from server. This could be due to network issues or the server may be down. API URL used: ${API_URL}`);
         }
       } else {
         console.error('Error message:', error.message);
