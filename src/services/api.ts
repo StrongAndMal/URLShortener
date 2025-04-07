@@ -6,6 +6,10 @@ const API_URL = import.meta.env.VITE_API_URL || 'https://urlshortener-production
 console.log('API URL initialized as:', API_URL);
 console.log('Environment variables:', import.meta.env);
 
+// Configure axios defaults
+axios.defaults.timeout = 15000; // 15 second timeout
+axios.defaults.headers.common['Content-Type'] = 'application/json';
+
 const formatUrl = (url: string): string => {
   // Remove any whitespace
   url = url.trim();
@@ -16,6 +20,19 @@ const formatUrl = (url: string): string => {
   }
   
   return url;
+};
+
+// Helper function to retry failed requests
+const retryRequest = async (fn: () => Promise<any>, retries = 3, delay = 1000): Promise<any> => {
+  try {
+    return await fn();
+  } catch (error) {
+    if (retries <= 0) throw error;
+    
+    console.log(`Retrying request, ${retries} attempts left...`);
+    await new Promise(resolve => setTimeout(resolve, delay));
+    return retryRequest(fn, retries - 1, delay);
+  }
 };
 
 export const shortenUrl = async (longUrl: string): Promise<string> => {
@@ -29,19 +46,24 @@ export const shortenUrl = async (longUrl: string): Promise<string> => {
   console.log('Formatted URL:', formattedUrl);
   console.log('Using API URL:', API_URL);
 
-  try {
+  const makeRequest = () => {
     const requestUrl = `${API_URL}/shorten`;
     console.log('Sending request to:', requestUrl);
     
-    const response = await axios.post(requestUrl, { url: formattedUrl }, {
+    return axios.post(requestUrl, { url: formattedUrl }, {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json'
-      }
+      },
+      withCredentials: false // This can help with CORS issues
     });
+  };
+
+  try {
+    // Try with retry mechanism
+    const response = await retryRequest(makeRequest);
     
     console.log('Response status:', response.status);
-    console.log('Response headers:', response.headers);
     console.log('Response data:', response.data);
     
     if (!response.data || !response.data.shortUrl) {
@@ -54,12 +76,22 @@ export const shortenUrl = async (longUrl: string): Promise<string> => {
       console.error('Is Axios error:', true);
       if (error.response) {
         console.error('Status:', error.response.status);
-        console.error('Headers:', error.response.headers);
         console.error('Server response data:', error.response.data);
         throw new Error(error.response.data.error || `Failed to shorten URL (Status: ${error.response.status})`);
       } else if (error.request) {
         console.error('No response received:', error.request);
-        throw new Error('No response received from server. Please check your connection.');
+        
+        // Try to ping the server to see if it's reachable
+        try {
+          const checkServer = await fetch(`${API_URL.split('/api')[0]}/health`);
+          if (checkServer.ok) {
+            throw new Error('Server is reachable but the API endpoint is not responding. Please try again later.');
+          } else {
+            throw new Error('Server is unreachable. Please check your connection or try again later.');
+          }
+        } catch (e) {
+          throw new Error('No response received from server. This could be due to network issues or the server may be down.');
+        }
       } else {
         console.error('Error message:', error.message);
         throw new Error(`Error setting up request: ${error.message}`);
