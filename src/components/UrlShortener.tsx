@@ -16,10 +16,6 @@ import {
   Heading,
   useColorModeValue,
   Divider,
-  Alert,
-  AlertIcon,
-  AlertTitle,
-  AlertDescription,
 } from '@chakra-ui/react';
 import { CopyIcon, CheckIcon, LinkIcon } from '@chakra-ui/icons';
 import { shortenUrl } from '../services/api';
@@ -32,7 +28,6 @@ const UrlShortener = () => {
   const toast = useToast();
   const { hasCopied, onCopy } = useClipboard(shortUrl);
 
-  const bgColor = useColorModeValue('white', 'gray.700');
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const inputBg = useColorModeValue('gray.50', 'gray.800');
   
