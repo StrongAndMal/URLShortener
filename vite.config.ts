@@ -9,7 +9,7 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': {
-        target: 'http://localhost:3000',
+        target: 'https://urlshortener-production-40c8.up.railway.app',
         changeOrigin: true,
       },
     },

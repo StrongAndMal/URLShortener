@@ -4,19 +4,35 @@ import bodyParser from 'body-parser';
 import shortid from 'shortid';
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
-// In-memory storage for URLs
+// Enable CORS for specific origins
+const allowedOrigins = [
+  'https://strongandmal.github.io',
+  'http://localhost:5173'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
+app.use(bodyParser.json());
+
+// Store URLs in memory (in production, you'd want to use a database)
 const urlMap = new Map<string, string>();
 
 // Base URL for shortened links
 const BASE_URL = 'http://localhost:3000';
 
-app.use(cors());
-app.use(bodyParser.json());
-
 // Health check endpoint
-app.get('/api/health', (req, res) => {
+app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
 
@@ -34,61 +50,47 @@ const formatUrl = (url: string): string => {
 
 // Generate a shorter ID (similar to bit.ly format)
 const generateShortId = (): string => {
-  // Generate a random string of 6 characters
-  return shortid.generate().substring(0, 6);
+  return shortid.generate().slice(0, 6);
 };
 
 // Shorten URL endpoint
 app.post('/api/shorten', (req, res) => {
-  console.log('Received request body:', req.body);
-  const { url } = req.body;
-  
-  if (!url) {
-    console.log('No URL provided');
-    return res.status(400).json({ error: 'URL is required' });
-  }
-
   try {
-    // Format and validate URL
+    const { url } = req.body;
+    
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' });
+    }
+
     const formattedUrl = formatUrl(url);
-    console.log('Formatted URL:', formattedUrl);
-    
-    new URL(formattedUrl);
-    console.log('URL validation successful');
-    
-    // Generate a short ID
     const shortId = generateShortId();
-    console.log('Generated short ID:', shortId);
+    const shortUrl = `https://urlshortener-production-40c8.up.railway.app/${shortId}`;
     
-    // Store the mapping
     urlMap.set(shortId, formattedUrl);
     
-    // Return the shortened URL
-    const shortUrl = `${BASE_URL}/${shortId}`;
-    console.log('Returning short URL:', shortUrl);
-    
+    console.log(`Shortened URL: ${formattedUrl} -> ${shortUrl}`);
     res.json({ shortUrl });
   } catch (error) {
-    console.error('Error processing URL:', error);
-    if (error instanceof TypeError) {
-      return res.status(400).json({ error: 'Please enter a valid URL (e.g., example.com or https://example.com)' });
-    }
+    console.error('Error shortening URL:', error);
     res.status(500).json({ error: 'Failed to shorten URL' });
   }
 });
 
 // Redirect endpoint
 app.get('/:shortId', (req, res) => {
-  const { shortId } = req.params;
-  console.log('Looking up short ID:', shortId);
-  
-  const originalUrl = urlMap.get(shortId);
-  console.log('Found URL:', originalUrl);
-  
-  if (originalUrl) {
-    res.redirect(originalUrl);
-  } else {
-    res.status(404).json({ error: 'URL not found' });
+  try {
+    const { shortId } = req.params;
+    const longUrl = urlMap.get(shortId);
+    
+    if (!longUrl) {
+      return res.status(404).json({ error: 'URL not found' });
+    }
+    
+    console.log(`Redirecting: ${shortId} -> ${longUrl}`);
+    res.redirect(longUrl);
+  } catch (error) {
+    console.error('Error redirecting:', error);
+    res.status(500).json({ error: 'Failed to redirect' });
   }
 });
 
@@ -99,5 +101,6 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
 });
 
 app.listen(port, () => {
-  console.log(`Server running at http://localhost:${port}`);
+  console.log(`Server running on port ${port}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 }); 

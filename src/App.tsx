@@ -1,48 +1,18 @@
-import React from 'react'
-import { ChakraProvider, extendTheme, Box } from '@chakra-ui/react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { ChakraProvider, Box } from '@chakra-ui/react'
 import UrlShortener from './components/UrlShortener'
-import UrlResult from './components/UrlResult'
 import Footer from './components/Footer'
-
-const theme = extendTheme({
-  styles: {
-    global: {
-      body: {
-        bg: 'gray.50',
-        color: 'gray.800',
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-      },
-    },
-  },
-  components: {
-    Button: {
-      baseStyle: {
-        fontWeight: 'bold',
-        borderRadius: 'lg',
-      },
-    },
-    Input: {
-      baseStyle: {
-        field: {
-          borderRadius: 'lg',
-        },
-      },
-    },
-  },
-})
 
 function App() {
   return (
-    <ChakraProvider theme={theme}>
+    <ChakraProvider>
       <Router>
-        <Box flex="1" display="flex" flexDirection="column">
-          <Routes>
-            <Route path="/" element={<UrlShortener />} />
-            <Route path="/result" element={<UrlResult />} />
-          </Routes>
+        <Box minH="100vh" display="flex" flexDirection="column">
+          <Box flex="1">
+            <Routes>
+              <Route path="/" element={<UrlShortener />} />
+            </Routes>
+          </Box>
           <Footer />
         </Box>
       </Router>

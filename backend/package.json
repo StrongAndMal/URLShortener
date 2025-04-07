@@ -1,12 +1,13 @@
 {
   "name": "url-shortener-backend",
   "version": "1.0.0",
-  "description": "URL Shortener Backend",
+  "description": "Backend server for URL shortener application",
   "main": "dist/server.js",
   "scripts": {
     "start": "node dist/server.js",
     "dev": "ts-node-dev --respawn --transpile-only server.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
@@ -26,5 +27,8 @@
     "@types/shortid": "^0.0.29",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

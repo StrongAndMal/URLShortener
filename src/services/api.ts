@@ -15,16 +15,6 @@ const formatUrl = (url: string): string => {
   return url;
 };
 
-const isValidUrl = (url: string): boolean => {
-  try {
-    const formattedUrl = formatUrl(url);
-    new URL(formattedUrl);
-    return true;
-  } catch {
-    return false;
-  }
-};
-
 export const shortenUrl = async (longUrl: string): Promise<string> => {
   console.log('Original URL:', longUrl);
   
