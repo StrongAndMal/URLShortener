@@ -16,8 +16,10 @@ import {
   Heading,
   useColorModeValue,
   Divider,
+  Badge,
+  HStack,
 } from '@chakra-ui/react';
-import { CopyIcon, CheckIcon, LinkIcon } from '@chakra-ui/icons';
+import { CopyIcon, CheckIcon, LinkIcon, ExternalLinkIcon } from '@chakra-ui/icons';
 import { shortenUrl } from '../services/api';
 
 const UrlShortener = () => {
@@ -30,6 +32,7 @@ const UrlShortener = () => {
 
   const borderColor = useColorModeValue('gray.200', 'gray.600');
   const inputBg = useColorModeValue('gray.50', 'gray.800');
+  const successBg = useColorModeValue('green.50', 'green.900');
   
   const isValidUrl = (urlString: string) => {
     try {
@@ -102,6 +105,12 @@ const UrlShortener = () => {
     }
   };
 
+  const openShortUrl = () => {
+    if (shortUrl) {
+      window.open(shortUrl, '_blank');
+    }
+  };
+
   return (
     <VStack spacing={6} align="stretch" w="100%">
       <Heading size="md" mb={1}>Shorten your URL</Heading>
@@ -146,28 +155,48 @@ const UrlShortener = () => {
           <Divider my={2} />
           
           <Box>
-            <Text fontWeight="bold" mb={2}>Your shortened URL:</Text>
+            <HStack justifyContent="space-between" mb={2}>
+              <Text fontWeight="bold">Your shortened URL:</Text>
+              <Badge colorScheme="green" px={2} py={1} borderRadius="md">
+                Ready to share
+              </Badge>
+            </HStack>
+            
             <Flex 
               p={3} 
               borderRadius="md" 
-              bg={inputBg} 
+              bg={successBg} 
               borderWidth="1px"
-              borderColor={borderColor}
+              borderColor="green.200"
               alignItems="center"
             >
-              <Text flex="1" fontWeight="medium" isTruncated>
+              <Text flex="1" fontWeight="medium" isTruncated color="green.700">
                 {shortUrl}
               </Text>
-              <Button
-                ml={2}
-                colorScheme={hasCopied ? 'green' : 'gray'}
-                onClick={handleCopy}
-                size="sm"
-                leftIcon={hasCopied ? <CheckIcon /> : <CopyIcon />}
-              >
-                {hasCopied ? 'Copied' : 'Copy'}
-              </Button>
+              <HStack spacing={2}>
+                <Button
+                  size="sm"
+                  leftIcon={<ExternalLinkIcon />}
+                  onClick={openShortUrl}
+                  variant="ghost"
+                  colorScheme="blue"
+                >
+                  Open
+                </Button>
+                <Button
+                  colorScheme={hasCopied ? 'green' : 'blue'}
+                  onClick={handleCopy}
+                  size="sm"
+                  leftIcon={hasCopied ? <CheckIcon /> : <CopyIcon />}
+                >
+                  {hasCopied ? 'Copied' : 'Copy'}
+                </Button>
+              </HStack>
             </Flex>
+            
+            <Text fontSize="sm" color="gray.500" mt={2}>
+              Share this link with anyone - it will redirect to your original URL.
+            </Text>
           </Box>
         </>
       )}

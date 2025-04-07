@@ -6,6 +6,9 @@ import shortid from 'shortid';
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Custom domain for short URLs (you'll need to register and configure this domain)
+const SHORT_DOMAIN = process.env.SHORT_DOMAIN || 'shrt.link';
+
 // List of allowed origins
 const allowedOrigins = [
   // Vercel deployments
@@ -13,6 +16,7 @@ const allowedOrigins = [
   'https://url-shortener-8o848ps0x-strongandmals-projects.vercel.app',
   'https://url-shortener-fbajvwg49-strongandmals-projects.vercel.app',
   'https://url-shortener-btvut9smz-strongandmals-projects.vercel.app',
+  'https://url-shortener-2i0qg0iki-strongandmals-projects.vercel.app',
   // Local development
   'http://localhost:5173',
   // GitHub Pages
@@ -52,18 +56,6 @@ app.use(bodyParser.json());
 // Store URLs in memory (in production, you'd want to use a database)
 const urlMap = new Map<string, string>();
 
-// Base URL for shortened links
-const BASE_URL = 'http://localhost:3000';
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  // Set CORS headers explicitly for health check
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-  
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
 const formatUrl = (url: string): string => {
   // Remove any whitespace
   url = url.trim();
@@ -78,7 +70,8 @@ const formatUrl = (url: string): string => {
 
 // Generate a shorter ID (similar to bit.ly format)
 const generateShortId = (): string => {
-  return shortid.generate().slice(0, 6);
+  // Create a shorter ID (5-6 characters is ideal)
+  return shortid.generate().slice(0, 5);
 };
 
 // Middleware to log all requests
@@ -103,7 +96,9 @@ app.post('/api/shorten', (req, res) => {
 
     const formattedUrl = formatUrl(url);
     const shortId = generateShortId();
-    const shortUrl = `https://urlshortener-production-40c8.up.railway.app/${shortId}`;
+    
+    // Create a bitly-style short URL 
+    const shortUrl = `https://${SHORT_DOMAIN}/${shortId}`;
     
     urlMap.set(shortId, formattedUrl);
     
@@ -140,6 +135,15 @@ app.get('/:shortId', (req, res) => {
   }
 });
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  // Set CORS headers explicitly for health check
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+  
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // API base endpoint for testing
 app.get('/api', (req, res) => {
   // Set CORS headers explicitly for API endpoint
@@ -149,13 +153,8 @@ app.get('/api', (req, res) => {
   res.json({ message: 'URL Shortener API is running', timestamp: new Date().toISOString() });
 });
 
-// Error handling middleware
-app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ error: 'Something broke!' });
-});
-
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Short domain: ${SHORT_DOMAIN}`);
 }); 
