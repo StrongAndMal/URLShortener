@@ -6,8 +6,10 @@ import shortid from 'shortid';
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Custom domain for short URLs (you'll need to register and configure this domain)
-const SHORT_DOMAIN = process.env.SHORT_DOMAIN || 'shrt.link';
+// Use the actual Railway domain until a custom domain is configured
+// When a custom domain is ready, set the SHORT_DOMAIN environment variable
+const RAILWAY_DOMAIN = 'urlshortener-production-40c8.up.railway.app';
+const SHORT_DOMAIN = process.env.SHORT_DOMAIN || RAILWAY_DOMAIN;
 
 // List of allowed origins
 const allowedOrigins = [
@@ -17,6 +19,7 @@ const allowedOrigins = [
   'https://url-shortener-fbajvwg49-strongandmals-projects.vercel.app',
   'https://url-shortener-btvut9smz-strongandmals-projects.vercel.app',
   'https://url-shortener-2i0qg0iki-strongandmals-projects.vercel.app',
+  'https://url-shortener-lyptpg4ax-strongandmals-projects.vercel.app',
   // Local development
   'http://localhost:5173',
   // GitHub Pages
@@ -97,8 +100,8 @@ app.post('/api/shorten', (req, res) => {
     const formattedUrl = formatUrl(url);
     const shortId = generateShortId();
     
-    // Create a bitly-style short URL 
-    const shortUrl = `https://${SHORT_DOMAIN}/${shortId}`;
+    // Create a short URL with the available domain
+    const shortUrl = `https://${SHORT_DOMAIN}/s/${shortId}`;
     
     urlMap.set(shortId, formattedUrl);
     
@@ -115,8 +118,8 @@ app.post('/api/shorten', (req, res) => {
   }
 });
 
-// Redirect endpoint
-app.get('/:shortId', (req, res) => {
+// Redirect endpoint for short URLs
+app.get('/s/:shortId', (req, res) => {
   try {
     const { shortId } = req.params;
     const longUrl = urlMap.get(shortId);
@@ -156,5 +159,5 @@ app.get('/api', (req, res) => {
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`Short domain: ${SHORT_DOMAIN}`);
+  console.log(`Using domain for short URLs: ${SHORT_DOMAIN}`);
 }); 
